@@ -1,23 +1,20 @@
 package crudpractice.crudpractice.service;
 
 import crudpractice.crudpractice.domain.Member;
-import crudpractice.crudpractice.repository.MemberRepositoryV3;
-import lombok.RequiredArgsConstructor;
+import crudpractice.crudpractice.repository.MemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
 
 @Slf4j
-@RequiredArgsConstructor
-public class MemberServiceV4 {
+    public class MemberServiceV4 {
 
-    /**
-     * TransactionTemplate method
-     * 1. execute() : 응답 값이 있을 때
-     * 2. executeWithoutResult() : 응답 값이 없을 때
-     */
-    private final MemberRepositoryV3 memberRepository;
+    private final MemberRepository memberRepository;
+
+    public MemberServiceV4 (MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
 
     @Transactional
     public void accountTransfer (String fromId, String toId, int money) throws SQLException {

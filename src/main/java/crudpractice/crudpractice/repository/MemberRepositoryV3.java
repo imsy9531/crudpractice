@@ -2,6 +2,7 @@ package crudpractice.crudpractice.repository;
 
 import crudpractice.crudpractice.domain.Member;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 import javax.sql.DataSource;
@@ -12,17 +13,18 @@ import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
 @Slf4j
-public class MemberRepositoryV2 {
+public class MemberRepositoryV3 {
 
     private final DataSource dataSource;
 
-    public MemberRepositoryV2 (DataSource dataSource) {
+    public MemberRepositoryV3 (DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
 
     public Member save (Member member) throws SQLException {
         String sql = "insert into member(member_id, money) values (?, ?)";
+
         Connection conn = null;
         PreparedStatement pstmt = null;
 
@@ -41,13 +43,16 @@ public class MemberRepositoryV2 {
         }
     }
 
-    public Member findById(Connection conn,String memberId) throws SQLException {
+
+    public Member findById(String memberId) throws SQLException {
         String sql = "select * from member where member_id = ?";
 
+        Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
         try {
+            conn = getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, memberId);
 
@@ -89,26 +94,6 @@ public class MemberRepositoryV2 {
             close(conn, pstmt, null);
         }
     }
-
-    public void update(Connection conn,String memberId, int money) throws SQLException {
-        String sql = "update member set money = ? where member_id = ?";
-
-        PreparedStatement pstmt = null;
-
-        try {
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, money);
-            pstmt.setString(2, memberId);
-            int resultSize = pstmt.executeUpdate();
-            log.info("resultSize = {}", resultSize);
-        } catch (SQLException e) {
-            log.info("error: ", e);
-            throw e;
-        } finally {
-            close(conn, pstmt, null);
-        }
-    }
-
     public void delete(String memberId) throws SQLException {
         String sql = "delete from member where member_id = ?";
 
@@ -131,11 +116,12 @@ public class MemberRepositoryV2 {
     private void close(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         JdbcUtils.closeResultSet(rs);
         JdbcUtils.closeStatement(pstmt);
-        JdbcUtils.closeConnection(conn);
+        // 트랜잭션 동기화
+        DataSourceUtils.releaseConnection(conn, dataSource);
     }
 
     private Connection getConnection () throws SQLException {
-        Connection conn = dataSource.getConnection();
+        Connection conn = DataSourceUtils.getConnection(dataSource);
         log.info("get connection={}, class={}", conn, conn.getClass());
         return conn;
     }

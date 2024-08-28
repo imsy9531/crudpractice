@@ -3,17 +3,24 @@ package crudpractice.crudpractice.repository;
 import crudpractice.crudpractice.connection.DBConnectionUtil;
 import crudpractice.crudpractice.domain.Member;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.support.JdbcUtils;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
-import static crudpractice.crudpractice.connection.DBConnectionUtil.*;
-
 @Slf4j
-public class MemberRepositoryV0 {
+public class MemberRepositoryV1 {
+
+    private final DataSource dataSource;
+
+    public MemberRepositoryV1(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
 
     public Member save (Member member) throws SQLException {
         String sql = "insert into member(member_id, money) values (?, ?)";
@@ -105,32 +112,14 @@ public class MemberRepositoryV0 {
     }
 
     private void close(Connection conn, PreparedStatement pstmt, ResultSet rs) {
-        if (rs != null) {
-            try {
-                rs.close();
-            } catch (SQLException e) {
-                log.info("error: ", e);
-            }
-        }
-
-        if (pstmt != null) {
-            try {
-                pstmt.close();
-            } catch (SQLException e) {
-                log.info("error: ", e);
-            }
-        }
-
-        if (conn != null) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                log.info("error: ", e);
-            }
-        }
+        JdbcUtils.closeResultSet(rs);
+        JdbcUtils.closeStatement(pstmt);
+        JdbcUtils.closeConnection(conn);
     }
 
-    private Connection getConnection() throws SQLException {
-        return DBConnectionUtil.getConnection();
+    private Connection getConnection () throws SQLException {
+        Connection conn = dataSource.getConnection();
+        log.info("get connection={}, class={}", conn, conn.getClass());
+        return conn;
     }
 }

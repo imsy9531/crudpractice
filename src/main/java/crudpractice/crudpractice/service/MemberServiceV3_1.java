@@ -1,10 +1,13 @@
 package crudpractice.crudpractice.service;
 
 import crudpractice.crudpractice.domain.Member;
-import crudpractice.crudpractice.repository.MemberRepositoryV1;
 import crudpractice.crudpractice.repository.MemberRepositoryV2;
+import crudpractice.crudpractice.repository.MemberRepositoryV3;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -12,22 +15,21 @@ import java.sql.SQLException;
 
 @Slf4j
 @RequiredArgsConstructor
-public class MemberServiceV2 {
+public class MemberServiceV3_1 {
 
-    private final DataSource dataSource;
-    private final MemberRepositoryV2 memberRepository;
+    private final PlatformTransactionManager transactionManager;
+    private final MemberRepositoryV3 memberRepository;
 
     public void accountTransfer (String fromId, String toId, int money) throws SQLException {
-        Connection conn = dataSource.getConnection();
+        // 트랜잭션 시작
+        TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+
         try {
-            conn.setAutoCommit(false);
-            bizLogic(conn, fromId, toId, money);
-            conn.commit();
+            bizLogic(fromId, toId, money);
+            transactionManager.commit(status);
         } catch (SQLException e) {
-            conn.rollback();
+            transactionManager.rollback(status);
             throw new IllegalStateException(e);
-        } finally {
-            release(conn);
         }
     }
 
@@ -42,9 +44,9 @@ public class MemberServiceV2 {
         }
     }
 
-    private void bizLogic (Connection conn, String fromId, String toId, int money) throws SQLException {
-        Member fromMember = memberRepository.findById(conn, fromId);
-        Member toMember = memberRepository.findById(conn, toId);
+    private void bizLogic (String fromId, String toId, int money) throws SQLException {
+        Member fromMember = memberRepository.findById(fromId);
+        Member toMember = memberRepository.findById(toId);
 
         memberRepository.update(fromId, fromMember.getMoney() - money);
         validation(toMember);

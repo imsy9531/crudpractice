@@ -1,6 +1,5 @@
 package crudpractice.crudpractice.repository;
 
-import crudpractice.crudpractice.connection.DBConnectionUtil;
 import crudpractice.crudpractice.domain.Member;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.support.JdbcUtils;
@@ -13,11 +12,11 @@ import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
 @Slf4j
-public class MemberRepositoryV1 {
+public class MemberRepositoryV2 {
 
     private final DataSource dataSource;
 
-    public MemberRepositoryV1(DataSource dataSource) {
+    public MemberRepositoryV2 (DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -42,17 +41,16 @@ public class MemberRepositoryV1 {
         }
     }
 
-    public Member findById(String memberId) throws SQLException {
+    public Member findById(Connection conn,String memberId) throws SQLException {
         String sql = "select * from member where member_id = ?";
 
-        Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
         try {
-            conn = getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, memberId);
+
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
@@ -79,6 +77,25 @@ public class MemberRepositoryV1 {
 
         try {
             conn = getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, money);
+            pstmt.setString(2, memberId);
+            int resultSize = pstmt.executeUpdate();
+            log.info("resultSize = {}", resultSize);
+        } catch (SQLException e) {
+            log.info("error: ", e);
+            throw e;
+        } finally {
+            close(conn, pstmt, null);
+        }
+    }
+
+    public void update(Connection conn,String memberId, int money) throws SQLException {
+        String sql = "update member set money = ? where member_id = ?";
+
+        PreparedStatement pstmt = null;
+
+        try {
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, money);
             pstmt.setString(2, memberId);
